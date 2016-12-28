@@ -1,0 +1,20 @@
+<html>
+    <head>
+        <style>
+            html, body {
+                width: 100%;
+                height: 100%;
+                background-color: gray;
+            }
+        </style>
+        <script src="../catch.js"></script>
+        <script src="init.js"></script>
+    </head>
+    <body id="container">
+        <script>
+            var request = new XMLHttpRequest();
+            request.open("GET", "http://invalid-url-and-other-stuff.com");
+            request.send();
+        </script>
+    </body>
+</html>
