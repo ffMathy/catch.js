@@ -1,0 +1,38 @@
+<html>
+    <head>
+        <link href="style.css" rel="stylesheet">
+        <script src="../catch.js"></script>
+        <script src="init.js"></script>
+    </head>
+    <body id="container">
+        <script>
+            var request1 = new XMLHttpRequest();
+            request1.onreadystatechange = function(ev) {
+                if(request1.readyState === XMLHttpRequest.DONE && request1.status === 200) {
+                    alert(request1._correlationId);
+
+                    var request2 = new XMLHttpRequest();
+                    request2.onreadystatechange = function(ev) {
+                        if(request2.readyState === XMLHttpRequest.DONE && request2.status === 200) {
+                            alert(request2._correlationId);
+                        }
+                    };
+
+                    request2.open("GET", "correlation-id.html?2");
+                    request2.send();
+                }
+            };
+            request1.open("GET", "correlation-id.html?1");
+            request1.send();
+            
+            var request3 = new XMLHttpRequest();
+            request3.onreadystatechange = function(ev) {
+                if(request3.readyState === XMLHttpRequest.DONE && request3.status === 200) {
+                    alert(request3._correlationId);
+                }
+            };
+            request3.open("GET", "correlation-id.html?3");
+            request3.send();
+        </script>
+    </body>
+</html>

@@ -40,6 +40,26 @@ var by = webdriver.By;
 var until = webdriver.until;
 describe('catch.js', function () {
     var driver;
+    var getAlertText = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var alertText;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        console.log("Waiting for alert to show up...");
+                        return [4 /*yield*/, driver.wait(until.alertIsPresent())];
+                    case 1:
+                        _a.sent();
+                        console.log("Alert is present.");
+                        return [4 /*yield*/, driver.switchTo().alert().getText()];
+                    case 2:
+                        alertText = _a.sent();
+                        console.log("Alert text fetched.", alertText);
+                        return [2 /*return*/, alertText];
+                }
+            });
+        });
+    };
     var getErrorObject = function () {
         return __awaiter(this, void 0, void 0, function () {
             var alertText, response, _a, clickCommand, targetElement;
@@ -47,41 +67,35 @@ describe('catch.js', function () {
                 switch (_b.label) {
                     case 0:
                         if (!true)
-                            return [3 /*break*/, 9];
-                        console.log("Waiting for alert to show up...");
-                        return [4 /*yield*/, driver.wait(until.alertIsPresent())];
+                            return [3 /*break*/, 8];
+                        return [4 /*yield*/, getAlertText()];
                     case 1:
-                        _b.sent();
-                        console.log("Alert is present.");
-                        return [4 /*yield*/, driver.switchTo().alert().getText()];
-                    case 2:
                         alertText = _b.sent();
-                        console.log("Alert text fetched.", alertText);
                         response = JSON.parse(alertText);
                         if (response.type === "error") {
                             return [2 /*return*/, response];
                         }
                         return [4 /*yield*/, driver.switchTo().alert().dismiss()];
-                    case 3:
+                    case 2:
                         _b.sent();
                         _a = response.type;
                         switch (_a) {
-                            case "click": return [3 /*break*/, 4];
+                            case "click": return [3 /*break*/, 3];
                         }
-                        return [3 /*break*/, 7];
-                    case 4:
+                        return [3 /*break*/, 6];
+                    case 3:
                         clickCommand = response;
                         return [4 /*yield*/, driver.findElement(by.id(clickCommand.targetId))];
-                    case 5:
+                    case 4:
                         targetElement = _b.sent();
                         console.log("Clicking element with ID \"" + clickCommand.targetId + "\"...");
                         return [4 /*yield*/, driver.actions().click(targetElement).perform()];
-                    case 6:
+                    case 5:
                         _b.sent();
-                        return [3 /*break*/, 8];
-                    case 7: throw new Error("Unknown command!");
-                    case 8: return [3 /*break*/, 0];
-                    case 9: return [2 /*return*/];
+                        return [3 /*break*/, 7];
+                    case 6: throw new Error("Unknown command!");
+                    case 7: return [3 /*break*/, 0];
+                    case 8: return [2 /*return*/];
                 }
             });
         });
@@ -92,7 +106,7 @@ describe('catch.js', function () {
                 switch (_a.label) {
                     case 0:
                         console.log("Invoking " + name + "...");
-                        return [4 /*yield*/, driver.get('file:///' + process.cwd() + '/tests/' + name)];
+                        return [4 /*yield*/, driver.get('http://localhost:8080/tests/' + name)];
                     case 1:
                         _a.sent();
                         return [2 /*return*/];
@@ -211,7 +225,7 @@ describe('catch.js', function () {
                                         return [4 /*yield*/, getErrorObject()];
                                     case 2:
                                         error = _a.sent();
-                                        expect(error.message).toEqual("An error occured while loading an IMG-tag.");
+                                        expect(error.message).toEqual("An error occured while loading an IMG-element.");
                                         expect(error.url).toEqual("http://invalid-url-that-doesnt-exist-at-all.com/");
                                         return [2 /*return*/];
                                 }
@@ -239,7 +253,7 @@ describe('catch.js', function () {
                                         return [4 /*yield*/, getErrorObject()];
                                     case 2:
                                         error = _a.sent();
-                                        expect(error.message).toEqual("Script error.");
+                                        expect(error.message).toEqual("An error occured while loading an SCRIPT-element.");
                                         return [2 /*return*/];
                                 }
                             });
@@ -266,7 +280,50 @@ describe('catch.js', function () {
                                         return [4 /*yield*/, getErrorObject()];
                                     case 2:
                                         error = _a.sent();
-                                        expect(error.message).toEqual("Script error.");
+                                        expect(error.message).toEqual("An error occured while fetching an AJAX resource.");
+                                        return [2 /*return*/];
+                                }
+                            });
+                        }); })];
+                    case 1:
+                        _a.sent();
+                        return [2 /*return*/];
+                }
+            });
+        });
+    });
+    it('should handle correlation IDs', function (done) {
+        return __awaiter(this, void 0, void 0, function () {
+            var _this = this;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, withEachDriver(done, function () { return __awaiter(_this, void 0, void 0, function () {
+                            var correlationIds, correlationId, distinctCorrelationIds, _i, correlationIds_1, correlationId_1;
+                            return __generator(this, function (_a) {
+                                switch (_a.label) {
+                                    case 0: return [4 /*yield*/, useTest('correlation-id.html')];
+                                    case 1:
+                                        _a.sent();
+                                        correlationIds = [];
+                                        _a.label = 2;
+                                    case 2:
+                                        if (!(correlationIds.length < 3))
+                                            return [3 /*break*/, 4];
+                                        return [4 /*yield*/, getAlertText()];
+                                    case 3:
+                                        correlationId = _a.sent();
+                                        correlationIds.push(correlationId);
+                                        return [3 /*break*/, 2];
+                                    case 4:
+                                        distinctCorrelationIds = [];
+                                        for (_i = 0, correlationIds_1 = correlationIds; _i < correlationIds_1.length; _i++) {
+                                            correlationId_1 = correlationIds_1[_i];
+                                            if (distinctCorrelationIds.indexOf(correlationId_1) === -1) {
+                                                distinctCorrelationIds.push(correlationIds);
+                                            }
+                                        }
+                                        expect(correlationIds.length).toEqual(3);
+                                        expect(distinctCorrelationIds.length).toEqual(2);
                                         return [2 /*return*/];
                                 }
                             });

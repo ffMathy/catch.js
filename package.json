@@ -2,9 +2,9 @@
   "name": "catch.js",
   "version": "1.0.0",
   "description": "Gotta Catch'em All! A truly global non-intrusive error handler that is pluggable.",
-  "main": "catch.js",
   "scripts": {
-    "test": "./node_modules/.bin/jasmine-node --color --matchall tests/tests.js"
+    "test": "./node_modules/.bin/jasmine-node --color --matchall tests/tests.js",
+    "lite": "lite-server -c serverconfig.json"
   },
   "repository": {
     "type": "git",
@@ -22,6 +22,7 @@
     "@types/node": "^6.0.54",
     "@types/selenium-webdriver": "^2.53.38",
     "jasmine-node": "^1.14.5",
-    "selenium-webdriver": "^3.0.1"
+    "selenium-webdriver": "^3.0.1",
+    "lite-server": "^2.2.2"
   }
 }

@@ -1,5 +1,3 @@
-var ready = false;
-
 var instance = CatchJs.getInstance();
 instance.addListener(function(message, url, line, col, error) {
     alert(JSON.stringify(<ErrorModel>{

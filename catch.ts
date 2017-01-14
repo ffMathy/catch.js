@@ -1,14 +1,35 @@
+declare interface CatchJsOptions {
+    correlationId?: {
+        enabled: boolean;
+        headerName?: string;
+    }
+}
+
 class CatchJs {
     private static instance: CatchJs;
 
     private listeners: Array<ErrorEventHandler>;
+    private options: CatchJsOptions;
 
     constructor() {
         this.listeners = new Array<ErrorEventHandler>();
     }
 
-    static getInstance() {
-        if (this.instance) return this.instance;
+    public static getInstance(options?: CatchJsOptions) {
+        if(!options) {
+            options = {};
+            if(!options.correlationId) {
+                options.correlationId = { enabled: true };
+                if(!options.correlationId.headerName) {
+                    options.correlationId.headerName = "X-CATCHJS-CORRELATION-ID";
+                }
+            }
+        }
+
+        if (this.instance) {
+            this.instance.options = options;
+            return this.instance;
+        }
 
         var newInstance = new CatchJs();
         this.instance = newInstance;
@@ -30,7 +51,7 @@ class CatchJs {
         this.handleGlobal();
         this.handleXMLHttp();
         this.handleImage();
-        this.handleScript();
+        this.handleDocumentCreate();
         this.handleEvents();
     }
 
@@ -53,11 +74,11 @@ class CatchJs {
         var onErrorOriginal = window.onerror;
         window.onerror = function (msg, url, line, col, error) {
             CatchJs.instance.onError(msg, url, line, col, error);
-            if (onErrorOriginal) return onErrorOriginal.apply(null, arguments);
+            if (onErrorOriginal) return onErrorOriginal.apply(window, arguments);
         };
     }
 
-    private createGuid() {
+    private createCorrelationId() {
         function s4() {
             return Math.floor((1 + Math.random()) * 0x10000)
             .toString(16)
@@ -72,16 +93,30 @@ class CatchJs {
         var addEventListenerOriginal = XMLHttpRequest.prototype.addEventListener;
         var sendOriginal = XMLHttpRequest.prototype.send;
 
-        XMLHttpRequest.prototype.addEventListener = function (type: string, listener: (this: XMLHttpRequest, ev: any) => any, useCapture?: boolean) {
-            var originalListener = listener;
-            listener = (ev: any) => {
-                originalListener.apply(this, ev);
-            };
-            return addEventListenerOriginal(type, listener, useCapture);
+        type CorrelatedXMLHttpRequest = {
+            _correlationId: string;
         };
 
-        XMLHttpRequest.prototype.send = function () {
-            this._correlationId = CatchJs.instance.createGuid();
+        var globalCorrelationId: string = null;
+
+        XMLHttpRequest.prototype.send = function (this: XMLHttpRequest & CorrelatedXMLHttpRequest) {
+            this._correlationId = globalCorrelationId || CatchJs.instance.createCorrelationId();
+
+            var onreadystatechangeOriginal = this.onreadystatechange;
+            this.onreadystatechange = (ev) => {
+                var oldGlobalCorrelationId = globalCorrelationId;
+                if(!globalCorrelationId) {
+                    globalCorrelationId = this._correlationId;
+                }
+                if(onreadystatechangeOriginal) {
+                    onreadystatechangeOriginal.call(this, ev);
+                }
+                globalCorrelationId = oldGlobalCorrelationId;
+            };
+
+            if(CatchJs.instance.options.correlationId.enabled) {
+                this.setRequestHeader(CatchJs.instance.options.correlationId.headerName, this._correlationId);
+            }
 
             CatchJs.instance.handleAsync(this);
             sendOriginal.apply(this, arguments);
@@ -101,16 +136,16 @@ class CatchJs {
         }
     }
 
-    private handleScript() {
-        var HTMLScriptElementOriginal = HTMLScriptElement;
-        HTMLScriptElement = <any>HTMLScriptElementOverride;
+    private handleDocumentCreate() {
+        var createElementOriginal = document.createElement;
+        document.createElement = <any>createElementOverride;
 
-        function HTMLScriptElementOverride() {
-            var script = new HTMLScriptElement;
+        function createElementOverride(tag: string) {
+            var element = createElementOriginal.call(document, tag);
             CatchJs.instance.wrapInTimeout(function () { 
-                CatchJs.instance.handleAsync(script); 
+                CatchJs.instance.handleAsync(element); 
             });
-            return script;
+            return element;
         }
     }
 
@@ -158,10 +193,17 @@ class CatchJs {
         obj.onload = onLoad;
 
         function onError(event: Event) {
-            var message = `An error occured while loading an ${event.srcElement.tagName.toUpperCase()}-tag.`;
+            var tagName = event.srcElement.tagName;
 
             var srcElementAny = <any>event.srcElement;
             var url: string = srcElementAny.src || null;
+
+            var message: string;
+            if(tagName) {
+                message = `An error occured while loading an ${tagName.toUpperCase()}-element.`;
+            } else {
+                message = `An error occured while fetching an AJAX resource.`;
+            }
 
             CatchJs.instance.onError(message, url, null, null, null);
             if (onErrorOriginal) return onErrorOriginal.apply(this, arguments);

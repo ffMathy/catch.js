@@ -17,9 +17,20 @@ var CatchJs = (function () {
         };
         this.listeners = new Array();
     }
-    CatchJs.getInstance = function () {
-        if (this.instance)
+    CatchJs.getInstance = function (options) {
+        if (!options) {
+            options = {};
+            if (!options.correlationId) {
+                options.correlationId = { enabled: true };
+                if (!options.correlationId.headerName) {
+                    options.correlationId.headerName = "X-CATCHJS-CORRELATION-ID";
+                }
+            }
+        }
+        if (this.instance) {
+            this.instance.options = options;
             return this.instance;
+        }
         var newInstance = new CatchJs();
         this.instance = newInstance;
         newInstance.inject();
@@ -35,7 +46,7 @@ var CatchJs = (function () {
         this.handleGlobal();
         this.handleXMLHttp();
         this.handleImage();
-        this.handleScript();
+        this.handleDocumentCreate();
         this.handleEvents();
     };
     CatchJs.prototype.handleGlobal = function () {
@@ -43,10 +54,10 @@ var CatchJs = (function () {
         window.onerror = function (msg, url, line, col, error) {
             CatchJs.instance.onError(msg, url, line, col, error);
             if (onErrorOriginal)
-                return onErrorOriginal.apply(null, arguments);
+                return onErrorOriginal.apply(window, arguments);
         };
     };
-    CatchJs.prototype.createGuid = function () {
+    CatchJs.prototype.createCorrelationId = function () {
         function s4() {
             return Math.floor((1 + Math.random()) * 0x10000)
                 .toString(16)
@@ -58,16 +69,24 @@ var CatchJs = (function () {
     CatchJs.prototype.handleXMLHttp = function () {
         var addEventListenerOriginal = XMLHttpRequest.prototype.addEventListener;
         var sendOriginal = XMLHttpRequest.prototype.send;
-        XMLHttpRequest.prototype.addEventListener = function (type, listener, useCapture) {
-            var _this = this;
-            var originalListener = listener;
-            listener = function (ev) {
-                originalListener.apply(_this, ev);
-            };
-            return addEventListenerOriginal(type, listener, useCapture);
-        };
+        var globalCorrelationId = null;
         XMLHttpRequest.prototype.send = function () {
-            this._correlationId = CatchJs.instance.createGuid();
+            var _this = this;
+            this._correlationId = globalCorrelationId || CatchJs.instance.createCorrelationId();
+            var onreadystatechangeOriginal = this.onreadystatechange;
+            this.onreadystatechange = function (ev) {
+                var oldGlobalCorrelationId = globalCorrelationId;
+                if (!globalCorrelationId) {
+                    globalCorrelationId = _this._correlationId;
+                }
+                if (onreadystatechangeOriginal) {
+                    onreadystatechangeOriginal.call(_this, ev);
+                }
+                globalCorrelationId = oldGlobalCorrelationId;
+            };
+            if (CatchJs.instance.options.correlationId.enabled) {
+                this.setRequestHeader(CatchJs.instance.options.correlationId.headerName, this._correlationId);
+            }
             CatchJs.instance.handleAsync(this);
             sendOriginal.apply(this, arguments);
         };
@@ -83,15 +102,15 @@ var CatchJs = (function () {
             return img;
         }
     };
-    CatchJs.prototype.handleScript = function () {
-        var HTMLScriptElementOriginal = HTMLScriptElement;
-        HTMLScriptElement = HTMLScriptElementOverride;
-        function HTMLScriptElementOverride() {
-            var script = new HTMLScriptElement;
+    CatchJs.prototype.handleDocumentCreate = function () {
+        var createElementOriginal = document.createElement;
+        document.createElement = createElementOverride;
+        function createElementOverride(tag) {
+            var element = createElementOriginal.call(document, tag);
             CatchJs.instance.wrapInTimeout(function () {
-                CatchJs.instance.handleAsync(script);
+                CatchJs.instance.handleAsync(element);
             });
-            return script;
+            return element;
         }
     };
     CatchJs.prototype.handleEvents = function () {
@@ -129,9 +148,16 @@ var CatchJs = (function () {
         var onLoadOriginal = obj.onload;
         obj.onload = onLoad;
         function onError(event) {
-            var message = "An error occured while loading an " + event.srcElement.tagName.toUpperCase() + "-tag.";
+            var tagName = event.srcElement.tagName;
             var srcElementAny = event.srcElement;
             var url = srcElementAny.src || null;
+            var message;
+            if (tagName) {
+                message = "An error occured while loading an " + tagName.toUpperCase() + "-element.";
+            }
+            else {
+                message = "An error occured while fetching an AJAX resource.";
+            }
             CatchJs.instance.onError(message, url, null, null, null);
             if (onErrorOriginal)
                 return onErrorOriginal.apply(this, arguments);

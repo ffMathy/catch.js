@@ -8,16 +8,21 @@ var until = webdriver.until;
 describe('catch.js', function() {
     var driver: webdriver.WebDriver;
 
+    var getAlertText = async function() {
+        console.log("Waiting for alert to show up...");
+        await driver.wait(until.alertIsPresent());
+        console.log("Alert is present.");
+
+        var alertText = await driver.switchTo().alert().getText();
+        console.log("Alert text fetched.", alertText);
+
+        return alertText;
+    };
+
     var getErrorObject = async function() {
         while(true) {
 
-            console.log("Waiting for alert to show up...");
-            await driver.wait(until.alertIsPresent());
-            console.log("Alert is present.");
-
-            var alertText = await driver.switchTo().alert().getText();
-            console.log("Alert text fetched.", alertText);
-
+            var alertText = await getAlertText();
             var response = <AlertResponse>JSON.parse(alertText);
             if(response.type === "error") {
                 return <ErrorModel>response;
@@ -41,7 +46,7 @@ describe('catch.js', function() {
 
     var useTest = async function(name: string) {
         console.log("Invoking " + name + "...");
-        await driver.get('file:///' + process.cwd() + '/tests/' + name);
+        await driver.get('http://localhost:8080/tests/' + name);
     };
 
     var withEachDriver = async function(
@@ -95,7 +100,7 @@ describe('catch.js', function() {
             await useTest('image.html');
 
             var error = await getErrorObject();
-            expect(error.message).toEqual("An error occured while loading an IMG-tag.");
+            expect(error.message).toEqual("An error occured while loading an IMG-element.");
             expect(error.url).toEqual("http://invalid-url-that-doesnt-exist-at-all.com/");
         });
 	});
@@ -105,7 +110,7 @@ describe('catch.js', function() {
             await useTest('script.html');
 
             var error = await getErrorObject();
-            expect(error.message).toEqual("Script error.");
+            expect(error.message).toEqual("An error occured while loading an SCRIPT-element.");
         });
 	});
 
@@ -114,7 +119,29 @@ describe('catch.js', function() {
             await useTest('xhr.html');
 
             var error = await getErrorObject();
-            expect(error.message).toEqual("Script error.");
+            expect(error.message).toEqual("An error occured while fetching an AJAX resource.");
+        });
+	});
+
+	it('should handle correlation IDs', async function(done) {
+        await withEachDriver(done, async () => {
+            await useTest('correlation-id.html');
+
+            var correlationIds = [];
+            while(correlationIds.length < 3) {
+                var correlationId = await getAlertText();
+                correlationIds.push(correlationId);
+            }
+
+            var distinctCorrelationIds = [];
+            for(let correlationId of correlationIds) {
+                if(distinctCorrelationIds.indexOf(correlationId) === -1) {
+                    distinctCorrelationIds.push(correlationIds);
+                }
+            }
+
+            expect(correlationIds.length).toEqual(3);
+            expect(distinctCorrelationIds.length).toEqual(2);
         });
 	});
 });

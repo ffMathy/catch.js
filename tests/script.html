@@ -1,22 +1,14 @@
 <html>
     <head>
-        <style>
-            html, body {
-                width: 100%;
-                height: 100%;
-                background-color: gray;
-            }
-        </style>
+        <link href="style.css" rel="stylesheet">
         <script src="../catch.js"></script>
         <script src="init.js"></script>
     </head>
     <body id="container">
         <script>
-            var script = new HTMLScriptElement();
+            var script = document.createElement("script");
             script.src = "http://invalid-url-that-doesnt-exist-at-all.com/";
             document.getElementById("container").appendChild(script);
-            
-            ready = true;
         </script>
     </body>
 </html>
