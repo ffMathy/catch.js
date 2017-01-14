@@ -46,6 +46,15 @@ var CatchJs = (function () {
                 return onErrorOriginal.apply(null, arguments);
         };
     };
+    CatchJs.prototype.createGuid = function () {
+        function s4() {
+            return Math.floor((1 + Math.random()) * 0x10000)
+                .toString(16)
+                .substring(1);
+        }
+        return s4() + s4() + '-' + s4() + '-' + s4() + '-' +
+            s4() + '-' + s4() + s4() + s4();
+    };
     CatchJs.prototype.handleXMLHttp = function () {
         var addEventListenerOriginal = XMLHttpRequest.prototype.addEventListener;
         var sendOriginal = XMLHttpRequest.prototype.send;
@@ -58,8 +67,9 @@ var CatchJs = (function () {
             return addEventListenerOriginal(type, listener, useCapture);
         };
         XMLHttpRequest.prototype.send = function () {
+            this._correlationId = CatchJs.instance.createGuid();
             CatchJs.instance.handleAsync(this);
-            return sendOriginal.apply(this, arguments);
+            sendOriginal.apply(this, arguments);
         };
     };
     CatchJs.prototype.handleImage = function () {

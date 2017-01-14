@@ -57,6 +57,17 @@ class CatchJs {
         };
     }
 
+    private createGuid() {
+        function s4() {
+            return Math.floor((1 + Math.random()) * 0x10000)
+            .toString(16)
+            .substring(1);
+        }
+
+        return s4() + s4() + '-' + s4() + '-' + s4() + '-' +
+            s4() + '-' + s4() + s4() + s4();
+    }
+
     private handleXMLHttp() {
         var addEventListenerOriginal = XMLHttpRequest.prototype.addEventListener;
         var sendOriginal = XMLHttpRequest.prototype.send;
@@ -70,8 +81,10 @@ class CatchJs {
         };
 
         XMLHttpRequest.prototype.send = function () {
+            this._correlationId = CatchJs.instance.createGuid();
+
             CatchJs.instance.handleAsync(this);
-            return sendOriginal.apply(this, arguments);
+            sendOriginal.apply(this, arguments);
         };
     }
 
