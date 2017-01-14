@@ -33,6 +33,7 @@ class CatchJs {
 
         var newInstance = new CatchJs();
         this.instance = newInstance;
+        this.instance.options = options;
 
         newInstance.inject();
 
