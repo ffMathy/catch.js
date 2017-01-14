@@ -57,7 +57,12 @@ class CatchJs {
 
     private onError = (messageOrEvent: string|ErrorEvent, url?: string, line?: number, col?: number, error?: Error) => {
         if(typeof messageOrEvent === 'ErrorEvent') {
-            this.onError(messageOrEvent.message, messageOrEvent.filename, messageOrEvent.lineno, messageOrEvent.colno, messageOrEvent.error);
+            this.onError(
+                messageOrEvent.message, 
+                messageOrEvent.filename, 
+                messageOrEvent.lineno, 
+                messageOrEvent.colno, 
+                messageOrEvent.error);
             return;
         }
 
@@ -186,32 +191,31 @@ class CatchJs {
         var onErrorOriginal = obj.onerror;
         obj.onerror = onError;
 
-        var onAbortOriginal = obj.onabort;
-        obj.onabort = onAbort;
-
         var onLoadOriginal = obj.onload;
         obj.onload = onLoad;
 
         function onError(event: Event) {
-            var tagName = event.srcElement.tagName;
+            var message = "An error occured.";
+            var url: string = null;
 
-            var srcElementAny = <any>event.srcElement;
-            var url: string = srcElementAny.src || null;
+            if(event) {
+                var tagName: string = null;
+                if(event.srcElement) {
+                    tagName = event.srcElement.tagName;
+                }
 
-            var message: string;
-            if(tagName) {
-                message = `An error occured while loading an ${tagName.toUpperCase()}-element.`;
-            } else {
-                message = `An error occured while fetching an AJAX resource.`;
+                var srcElementAny = <any>event.srcElement;
+                url = srcElementAny.src || null;
+
+                if(tagName) {
+                    message = `An error occured while loading an ${tagName.toUpperCase()}-element.`;
+                } else {
+                    message = `An error occured while fetching an AJAX resource.`;
+                }
             }
 
             CatchJs.instance.onError(message, url, null, null, null);
             if (onErrorOriginal) return onErrorOriginal.apply(this, arguments);
-        };
-
-        function onAbort(error) {
-            CatchJs.instance.onError.call(this, error);
-            if (onAbortOriginal) return onAbortOriginal.apply(this, arguments);
         };
 
         function onLoad(request) {

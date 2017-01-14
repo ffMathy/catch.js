@@ -143,30 +143,28 @@ var CatchJs = (function () {
     CatchJs.prototype.handleAsync = function (obj) {
         var onErrorOriginal = obj.onerror;
         obj.onerror = onError;
-        var onAbortOriginal = obj.onabort;
-        obj.onabort = onAbort;
         var onLoadOriginal = obj.onload;
         obj.onload = onLoad;
         function onError(event) {
-            var tagName = event.srcElement.tagName;
-            var srcElementAny = event.srcElement;
-            var url = srcElementAny.src || null;
-            var message;
-            if (tagName) {
-                message = "An error occured while loading an " + tagName.toUpperCase() + "-element.";
-            }
-            else {
-                message = "An error occured while fetching an AJAX resource.";
+            var message = "An error occured.";
+            var url = null;
+            if (event) {
+                var tagName = null;
+                if (event.srcElement) {
+                    tagName = event.srcElement.tagName;
+                }
+                var srcElementAny = event.srcElement;
+                url = srcElementAny.src || null;
+                if (tagName) {
+                    message = "An error occured while loading an " + tagName.toUpperCase() + "-element.";
+                }
+                else {
+                    message = "An error occured while fetching an AJAX resource.";
+                }
             }
             CatchJs.instance.onError(message, url, null, null, null);
             if (onErrorOriginal)
                 return onErrorOriginal.apply(this, arguments);
-        }
-        ;
-        function onAbort(error) {
-            CatchJs.instance.onError.call(this, error);
-            if (onAbortOriginal)
-                return onAbortOriginal.apply(this, arguments);
         }
         ;
         function onLoad(request) {
