@@ -8,6 +8,7 @@
     "files": [
         "catch.ts",
         "tests/tests.ts",
-        "tests/init.ts"
+        "tests/init.ts",
+        "tests/global.d.ts"
     ]
 }

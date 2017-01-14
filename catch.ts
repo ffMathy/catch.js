@@ -58,7 +58,17 @@ class CatchJs {
     }
 
     private handleXMLHttp() {
+        var addEventListenerOriginal = XMLHttpRequest.prototype.addEventListener;
         var sendOriginal = XMLHttpRequest.prototype.send;
+
+        XMLHttpRequest.prototype.addEventListener = function (type: string, listener: (this: XMLHttpRequest, ev: any) => any, useCapture?: boolean) {
+            var originalListener = listener;
+            listener = (ev: any) => {
+                originalListener.apply(this, ev);
+            };
+            return addEventListenerOriginal(type, listener, useCapture);
+        };
+
         XMLHttpRequest.prototype.send = function () {
             CatchJs.instance.handleAsync(this);
             return sendOriginal.apply(this, arguments);
@@ -119,6 +129,8 @@ class CatchJs {
                     throw e;
                 }
             }
+
+            return withError;
         }
     }
 

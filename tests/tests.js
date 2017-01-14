@@ -38,28 +38,67 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 var webdriver = require("selenium-webdriver");
 var by = webdriver.By;
 var until = webdriver.until;
-;
 describe('catch.js', function () {
     var driver;
     var getErrorObject = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var alertText, error;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, driver.switchTo().alert().getText()];
+            var alertText, response, _a, clickCommand, targetElement;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
+                    case 0:
+                        if (!true)
+                            return [3 /*break*/, 9];
+                        console.log("Waiting for alert to show up...");
+                        return [4 /*yield*/, driver.wait(until.alertIsPresent())];
                     case 1:
-                        alertText = _a.sent();
-                        error = JSON.parse(alertText);
-                        return [2 /*return*/, error];
+                        _b.sent();
+                        console.log("Alert is present.");
+                        return [4 /*yield*/, driver.switchTo().alert().getText()];
+                    case 2:
+                        alertText = _b.sent();
+                        console.log("Alert text fetched.", alertText);
+                        response = JSON.parse(alertText);
+                        if (response.type === "error") {
+                            return [2 /*return*/, response];
+                        }
+                        return [4 /*yield*/, driver.switchTo().alert().dismiss()];
+                    case 3:
+                        _b.sent();
+                        _a = response.type;
+                        switch (_a) {
+                            case "click": return [3 /*break*/, 4];
+                        }
+                        return [3 /*break*/, 7];
+                    case 4:
+                        clickCommand = response;
+                        return [4 /*yield*/, driver.findElement(by.id(clickCommand.targetId))];
+                    case 5:
+                        targetElement = _b.sent();
+                        console.log("Clicking element with ID \"" + clickCommand.targetId + "\"...");
+                        return [4 /*yield*/, driver.actions().click(targetElement).perform()];
+                    case 6:
+                        _b.sent();
+                        return [3 /*break*/, 8];
+                    case 7: throw new Error("Unknown command!");
+                    case 8: return [3 /*break*/, 0];
+                    case 9: return [2 /*return*/];
                 }
             });
         });
     };
     var useTest = function (name) {
-        driver.get('file:///' + process.cwd() + '/tests/' + name);
-        driver.wait(until.elementLocated(by.id("container")));
-        driver.actions().click(driver.findElement(by.id("container")));
-        driver.wait(until.alertIsPresent());
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        console.log("Invoking " + name + "...");
+                        return [4 /*yield*/, driver.get('file:///' + process.cwd() + '/tests/' + name)];
+                    case 1:
+                        _a.sent();
+                        return [2 /*return*/];
+                }
+            });
+        });
     };
     var withEachDriver = function (doneCallback, callback) {
         return __awaiter(this, void 0, void 0, function () {
@@ -77,15 +116,19 @@ describe('catch.js', function () {
                         if (!(_i < drivers_1.length))
                             return [3 /*break*/, 6];
                         driverFactory = drivers_1[_i];
+                        console.log("Spawning driver...");
                         driver = driverFactory();
                         _a.label = 2;
                     case 2:
                         _a.trys.push([2, , 4, 5]);
+                        console.log("Running test...");
                         return [4 /*yield*/, callback()];
                     case 3:
                         _a.sent();
+                        console.log("No errors during test.");
                         return [3 /*break*/, 5];
                     case 4:
+                        console.log("Killing driver...");
                         driver.quit();
                         driver = null;
                         return [7 /*endfinally*/];
@@ -108,12 +151,13 @@ describe('catch.js', function () {
                             var error;
                             return __generator(this, function (_a) {
                                 switch (_a.label) {
-                                    case 0:
-                                        useTest('event.html');
-                                        return [4 /*yield*/, getErrorObject()];
+                                    case 0: return [4 /*yield*/, useTest('event.html')];
                                     case 1:
+                                        _a.sent();
+                                        return [4 /*yield*/, getErrorObject()];
+                                    case 2:
                                         error = _a.sent();
-                                        expect(error.message).toEqual("Uncaught event error");
+                                        expect(error.message).toEqual("event error");
                                         return [2 /*return*/];
                                 }
                             });
@@ -134,10 +178,11 @@ describe('catch.js', function () {
                             var error;
                             return __generator(this, function (_a) {
                                 switch (_a.label) {
-                                    case 0:
-                                        useTest('timeout.html');
-                                        return [4 /*yield*/, getErrorObject()];
+                                    case 0: return [4 /*yield*/, useTest('timeout.html')];
                                     case 1:
+                                        _a.sent();
+                                        return [4 /*yield*/, getErrorObject()];
+                                    case 2:
                                         error = _a.sent();
                                         expect(error.message).toEqual("Uncaught timeout error");
                                         return [2 /*return*/];
@@ -160,10 +205,11 @@ describe('catch.js', function () {
                             var error;
                             return __generator(this, function (_a) {
                                 switch (_a.label) {
-                                    case 0:
-                                        useTest('image.html');
-                                        return [4 /*yield*/, getErrorObject()];
+                                    case 0: return [4 /*yield*/, useTest('image.html')];
                                     case 1:
+                                        _a.sent();
+                                        return [4 /*yield*/, getErrorObject()];
+                                    case 2:
                                         error = _a.sent();
                                         expect(error.message).toEqual("An error occured while loading an IMG-tag.");
                                         expect(error.url).toEqual("http://invalid-url-that-doesnt-exist-at-all.com/");
@@ -187,10 +233,11 @@ describe('catch.js', function () {
                             var error;
                             return __generator(this, function (_a) {
                                 switch (_a.label) {
-                                    case 0:
-                                        useTest('script.html');
-                                        return [4 /*yield*/, getErrorObject()];
+                                    case 0: return [4 /*yield*/, useTest('script.html')];
                                     case 1:
+                                        _a.sent();
+                                        return [4 /*yield*/, getErrorObject()];
+                                    case 2:
                                         error = _a.sent();
                                         expect(error.message).toEqual("Script error.");
                                         return [2 /*return*/];
@@ -213,10 +260,11 @@ describe('catch.js', function () {
                             var error;
                             return __generator(this, function (_a) {
                                 switch (_a.label) {
-                                    case 0:
-                                        useTest('xhr.html');
-                                        return [4 /*yield*/, getErrorObject()];
+                                    case 0: return [4 /*yield*/, useTest('xhr.html')];
                                     case 1:
+                                        _a.sent();
+                                        return [4 /*yield*/, getErrorObject()];
+                                    case 2:
                                         error = _a.sent();
                                         expect(error.message).toEqual("Script error.");
                                         return [2 /*return*/];
